@@ -1,9 +1,19 @@
 # 🐧 NASM Assembly Linux Notes 🐧
-🐧 Assembly with Linux (Notes, Syscalls) 🐧
+🐧 Assembly with **Linux** (Notes, **Syscalls**, **Protection Rings**) 🐧
 
 ## 🐧 System Calls Linux (Syscalls) 🐧
 
 ![System Calls Linux Assembly NASM ASM](Images/systemcalls_linux_kernel.png)
+
+### ❓ What is a System Call? ❓
+
+When you run a program which calls **open, fork, read, write** (and many others) you are making a **System Call**.
+
+**System Calls** are how a program enters the kernel to perform some task. Programs use **System Calls** to perform a variety of operations such as: **creating processes, doing network and file IO**, and much more.
+
+Example: A user running a word processor in **User Mode (Ring 3)** presses “save”: a **System Call** is made into **Kernel Mode (Ring 0)**, asking the **Kernel** to save the file.
+
+## 📖 System Call Table (Syscall Table) 📖
 
 <html xmlns:v="urn:schemas-microsoft-com:vml"
 xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -4757,3 +4767,36 @@ xmlns="http://www.w3.org/TR/REC-html40">
 </body>
 
 </html>
+
+
+## 🔧 Simple System Call Example calling SYS_WRITE (kernel opcode 4) 🔧
+At Line **17**: **mov     eax, 4      ; invoke SYS_WRITE (kernel opcode 4)**
+```
+; Hello World Program
+; Compile with: nasm -f elf helloworld.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 helloworld.o -o helloworld
+; Run with: ./helloworld
+ 
+SECTION .data
+msg     db      'Hello World!', 0Ah     ; assign msg variable with your message string
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    mov     edx, 13     ; number of bytes to write - one for each letter plus 0Ah (line feed character)
+    mov     ecx, msg    ; move the memory address of our message string into ecx
+    mov     ebx, 1      ; write to the STDOUT file
+    mov     eax, 4      ; invoke SYS_WRITE (kernel opcode 4)
+    int     80h
+```
+## 🐧 Protection Rings / Privilege Levels 🐧
+The x86-64 CPUs have a concept called **Privilege Levels**. (also often called **Protection Rings**)</br>
+**Linux** only uses **Ring 0** and **3** for **Kernel Mode (Ring 0)** and **User Mode (Ring 3)**. Thus, all user mode processes, running when the system is in any run level execute in **Ring 3**, until they make a **System Call** into kernel code, which transitions the cpu to **Ring 0**.
+
+1. The **Kernel** runs at the most **privileged level**, called **Ring 0**. **User programs** run at **Ring 3**.
+2. **Ring 0** can execute any system instruction and is given full trust.
+3. To enter **Kernel Mode (Ring 0)**, you must perform a **System Call**. (Another Way to use **Kernel Mode (Ring 0)** is by writing **Linux Kernel Modules** in C.) </br> *Additional Info: In Windows you usually program a **driver** in C to use Kernel Mode (Ring 0) and like **Linux**, Windows only uses **Ring 0** and **3** too.*
+
+![Privilege_Levels System Calls Linux Assembly NASM ASM](Images/privilege_levels_linux.png)
